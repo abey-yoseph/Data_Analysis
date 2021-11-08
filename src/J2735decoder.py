@@ -60,16 +60,12 @@ for dt in list1:
 
     if(dt[1][0:4]==msgid):
         msg = J2735.DSRC.MessageFrame
-        #print("hex: " + dt[1] + " byte length: " + str(len(dt[1])))
         try:
             msg.from_uper(unhexlify(dt[1]))
         except:
             continue
 
         if (msgid == "0013"):
-            # if (msg()['value'][1]['intersections'][0]['id']['id'] == intersection):
-            #     print("Intersection: " + str(intersection))
-
             intersectionID = msg()['value'][1]['intersections'][0]['id']['id']
             if intersectionID == intersection:
                 group2_eventState = msg()['value'][1]['intersections'][0]['states'][1]['state-time-speed'][0]['eventState']

@@ -7,6 +7,7 @@ import difflib
 import math
 import geopy.distance
 
+#read in necessary input files
 bsm_txFile = sys.argv[1] #BSM TX OBU file
 bsm_rxFile = sys.argv[2] #BSM RX OBU file (shuttle)
 spat_rxFile = sys.argv[3] #SPAT RX OBU file
@@ -42,7 +43,7 @@ def phaseTime(moy, endTime):
 
 with open(bsm_txFile, "r") as bsmTx, open(bsm_rxFile, "r") as bsmRx, open(spat_rxFile, "r") as spatRx, open(map_rxFile, "r") as mapRx, \
 open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as write_obj:
-
+    #converting input files to lists
     csv_bsm_tx_reader = reader(bsmTx)
     csv_bsm_rx_reader = reader(bsmRx)
     csv_spat_rx_reader = reader(spatRx)
@@ -58,6 +59,7 @@ open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as wri
     spatRxRows = list(csv_spat_rx_reader)
     mapRxRows = list(csv_map_rx_reader)
 
+    #get the static GPS coordinates of the intersection of interest
     intersection_lat = mapRxRows[1][2]
     intersection_long = mapRxRows[1][3]
 
@@ -81,6 +83,7 @@ open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as wri
         time = "n/a"
         difference = 1000
         index = 0
+
         #find where the test vehicle was located when shuttle transmitted bsm
         for j in range(0, len(bsmRxRows)):
             shuttle_rxTime = float(bsmRxRows[j][0])
@@ -107,15 +110,16 @@ open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as wri
 
         difference2 = 1000
         index2 = 0
-
+        lastSpatRxRow = 0
         #get the closest spat message in time to the transmitted BSM and extract signal phase information
-        for k in range(0, len(spatRxRows)):
+        for k in range(lastSpatRxRow+1, len(spatRxRows)):
             spat_rxTime = float(spatRxRows[k][0])
             temp2 = vehicle_tx_time - spat_rxTime
             if (temp2 > 0 and temp2 < difference2):
                 difference2 = temp2
                 index2 = k
 
+            #get the 4 signal states for the spat message of interest
             signalgroup2_state = spatRxRows[index2][2]
             signalgroup2_phase_minEndTime = float(spatRxRows[index2][3])
             signalgroup2_phase_maxEndTime = float(spatRxRows[index2][4])
@@ -130,6 +134,7 @@ open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as wri
             signalgroup8_phase_maxEndTime = float(spatRxRows[index2][13])
             moy = float(spatRxRows[index2][14])
 
+            #calculate min and max time left in the 4 signal phases
             signalgroup2_phase_minEndTime_calculated = phaseTime(moy, signalgroup2_phase_minEndTime)
             signalgroup2_phase_maxEndTime_calculated = phaseTime(moy, signalgroup2_phase_maxEndTime)
             signalgroup4_phase_minEndTime_calculated = phaseTime(moy, signalgroup4_phase_minEndTime)
@@ -138,6 +143,8 @@ open("Test_"+testNum+"_Trial_"+trialNum+"_combined.csv", 'w', newline='') as wri
             signalgroup6_phase_maxEndTime_calculated = phaseTime(moy, signalgroup6_phase_maxEndTime)
             signalgroup8_phase_minEndTime_calculated = phaseTime(moy, signalgroup8_phase_minEndTime)
             signalgroup8_phase_maxEndTime_calculated = phaseTime(moy, signalgroup8_phase_maxEndTime)
+
+            lastSpatRxRow = index2
 
         #write all desired information to a csv
         csv_writer.writerow([shuttle_rxTime, shuttle_lat, shuttle_long, shuttle_speed, shuttle_accel, vehicle_tx_time, vehicle_tx_lat,
