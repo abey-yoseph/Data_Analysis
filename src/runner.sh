@@ -33,6 +33,7 @@ rm $directory/data/payloadOutput/*
 #The OBU can transmit/receive on one of its two radios,a or c. This function will check this
 #based on the size of the tx/rx pcap files
 getRadioUsed() {
+
 	radio_A_tx_cnt=$(wc -c tx_r1a.pcap | awk '{print $1}')
 	radio_A_rx_cnt=$(wc -c rx_r1a.pcap | awk '{print $1}')
 
@@ -124,11 +125,20 @@ combineFiles() {
   mv *_combined* $directory/data/combinedOutput
 }
 
+#renaming tx/rx files in case script needs to be rerun on the same data set
+renameRawFiles() {
+	cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${i}_Trial_${j}
+
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}.pcap tx_${rad}.pcap
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}.pcap rx_${rad}.pcap
+}
+
 processing(){
   extractPackets
   getPayload
   decodePackets
   combineFiles
+	renameRawFiles
  }
 
 processing
