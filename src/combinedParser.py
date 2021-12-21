@@ -6,6 +6,8 @@ from csv import reader
 import difflib
 import math
 import geopy.distance
+from scipy.signal import argrelextrema
+from scipy.signal import find_peaks
 
 #read in necessary input files
 bsm_txFile = sys.argv[1] #BSM TX OBU file
@@ -51,8 +53,12 @@ def lambdaHelper(row, stopLat, stopLon):
     phaseTime(row['moy'], row['group6_maxEndTime']), phaseTime(row['moy'], row['group8_minEndTime']),
     phaseTime(row['moy'], row['group8_maxEndTime'])])
 
+#returns the distance from the first location
+def vehicleTravelledHelper(row, startLat, startLon):
+    return distanceBetween(startLat, startLon, row['vehicle_lat'], row['vehicle_lon'])
+
 #merges bsm tx with bsm rx based on closest time
-#then merges that file with spat rx based on closest time 
+#then merges that file with spat rx based on closest time
 def combiner(bsm_txFile, bsm_rxFile, spat_rxFile, map_rxFile):
     bsmTx = pd.read_csv(f'{bsm_txFile}')
     bsmRx = pd.read_csv(f'{bsm_rxFile}')
@@ -63,10 +69,16 @@ def combiner(bsm_txFile, bsm_rxFile, spat_rxFile, map_rxFile):
     spatRx.drop('hex', axis=1, inplace=True)
 
     #get the static GPS coordinates of the intersection of interest
-    intersection_lat = mapRx.loc[1, 'laneLat']
-    intersection_lon = mapRx.loc[1, 'laneLong']
+    intersection_lat = mapRx['laneLat'].iloc[0]
+    intersection_lon = mapRx['laneLong'].iloc[0]
 
+    first_vehicle_lat = bsmTx['latitude'].iloc[0]
+    first_vehicle_lon = bsmTx['longitude'].iloc[0]
+
+    #perform left nearest merge to get closest bsm rx time from the shuttle to the bsm tx time of the test vehicle
     bsm_tx_rx_merged = pd.merge_asof(bsmTx,bsmRx,on='time',direction='nearest',allow_exact_matches=False)
+
+    #then perform left nearest merge to get closest spat rx time from the intersection to the bsm tx time of the test vehicle
     bsm_spat_merged = pd.merge_asof(bsm_tx_rx_merged,spatRx,on='time',direction='nearest',allow_exact_matches=False)
 
     bsm_spat_merged.rename(columns={'time': 'vehicle_tx_time', 'latitude_x': 'vehicle_lat', 'longitude_x': 'vehicle_lon',
@@ -83,6 +95,15 @@ def combiner(bsm_txFile, bsm_rxFile, spat_rxFile, map_rxFile):
     'group4_minEndTime', 'group4_maxEndTime', 'group6_minEndTime',
     'group6_maxEndTime', 'group8_minEndTime', 'group8_maxEndTime', 'moy'], axis=1, inplace=True)
 
+    bsm_spat_merged['vehicle_distance_from_start(m)'] = bsm_spat_merged.apply(lambda row: vehicleTravelledHelper(row, first_vehicle_lat, first_vehicle_lon), axis=1)
+
+    #figure out the number of laps that have been done during the test
+    dist = bsm_spat_merged['vehicle_distance_from_start(m)']
+    dist_array = np.asarray(dist)
+    peaks, _ = find_peaks(dist_array*-1, distance=dist_array.max()*2+100)
+    laps = len(peaks)-1
+
+    bsm_spat_merged.loc[bsm_spat_merged.index[len(bsm_spat_merged)-1], 'num_laps'] = laps
 
     bsm_spat_merged.to_csv(f'Test_{testNum}_Trial_{trialNum}_combined.csv', index=False)
 

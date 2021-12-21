@@ -129,8 +129,10 @@ combineFiles() {
 renameRawFiles() {
 	cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${i}_Trial_${j}
 
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}.pcap tx_${rad}.pcap
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}.pcap rx_${rad}.pcap
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_r1a.pcap tx_r1a.pcap
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_r1a.pcap rx_r1a.pcap
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_r1c.pcap tx_r1c.pcap
+	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_r1c.pcap rx_r1c.pcap
 }
 
 processing(){
