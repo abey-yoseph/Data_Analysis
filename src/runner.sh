@@ -7,12 +7,11 @@ fi
 
 #DataSet will be the name of the directory containing all data folders
 #intersectionID will be the intersection interested in analyzing
-#testCount is the number of tests in the data directory
-#trialCount is the number of trials per test in the data directory
+#test, trial is the test and trial to analyze
 DataSet=$1
 intersectionID=$2
-testCount=$3
-trialCount=$4
+test=$3
+trial=$4
 directory=$(cd ../ &&pwd)
 radio="r1c"
 
@@ -45,30 +44,22 @@ getRadioUsed() {
 
 #Get the timestamp and frame data into csv format
 extractPackets() {
-	#i should be how many tests are to be analyzed in the data set
-	#j should be the range of trials
-  for i in $(eval echo "{1..$testCount}")
-  do
-    for j in $(eval echo "{1..$trialCount}")
-      do
-				#adjust the directory names as needed
-        cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${i}_Trial_${j}
+  #adjust the directory names as needed
+  cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${test}_Trial_${trial}
 
-				rad=$(getRadioUsed)
-				#adjust this based on which radio, a or c, transmitted and received
-				#renaming pcap files to have test and trial number in their name
-        mv tx_${rad}.pcap DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}.pcap #tx bsm
-        mv rx_${rad}.pcap DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}.pcap #rx bsm/spat/map
+  rad=$(getRadioUsed)
+  #adjust this based on which radio, a or c, transmitted and received
+  #renaming pcap files to have test and trial number in their name
+  mv tx_${rad}.pcap DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_${rad}.pcap #tx bsm
+  mv rx_${rad}.pcap DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}.pcap #rx bsm/spat/map
 
-				#using wireshark utility tshark to extract frame time and payload into csv format
-        cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${i}_Trial_${j}
-        tshark -r DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}.pcap --disable-protocol wsmp -Tfields -Eseparator=, -e frame.time_epoch -e data.data > \
-        $directory/data/tsharkOutput/tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}.csv
+  #using wireshark utility tshark to extract frame time and payload into csv format
+  cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${test}_Trial_${trial}
+  tshark -r DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_${rad}.pcap --disable-protocol wsmp -Tfields -Eseparator=, -e frame.time_epoch -e data.data > \
+  $directory/data/tsharkOutput/tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_${rad}.csv
 
-        tshark -r DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}.pcap --disable-protocol wsmp -Tfields -Eseparator=, -e frame.time_epoch -e data.data > \
-        $directory/data/tsharkOutput/tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}.csv
-      done
-  done
+  tshark -r DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}.pcap --disable-protocol wsmp -Tfields -Eseparator=, -e frame.time_epoch -e data.data > \
+  $directory/data/tsharkOutput/tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}.csv
 }
 
 #parse tshark output to get rid of unnecessary bytes in front of BSM/SPAT/MAP and just return payload
@@ -111,28 +102,22 @@ decodePackets() {
 combineFiles() {
   cd $directory/src
 
-  for i in $(eval echo "{1..$testCount}")
-  do
-    for j in $(eval echo "{1..$trialCount}")
-    do
-      python3 combinedParser.py $directory/data/decodedOutput/decoded_BSM_tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_tx_${rad}_payload.csv \
-      $directory/data/decodedOutput/decoded_BSM_tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}_payload.csv \
-      $directory/data/decodedOutput/decoded_SPAT_tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}_payload.csv \
-      $directory/data/decodedOutput/decoded_MAP_tshark_DSRC_Mosaic_Test_${i}_Trial_${j}_rx_${rad}_payload.csv
-    done
-  done
+  python3 combinedParser.py $directory/data/decodedOutput/decoded_BSM_tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_${rad}_payload.csv \
+  $directory/data/decodedOutput/decoded_BSM_tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}_payload.csv \
+  $directory/data/decodedOutput/decoded_SPAT_tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}_payload.csv \
+  $directory/data/decodedOutput/decoded_MAP_tshark_DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_${rad}_payload.csv
 
   mv *_combined* $directory/data/combinedOutput
 }
 
 #renaming tx/rx files in case script needs to be rerun on the same data set
 renameRawFiles() {
-	cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${i}_Trial_${j}
+	cd $directory/data/${DataSet}/DSRC_Mosaic_Test_${test}_Trial_${trial}
 
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_r1a.pcap tx_r1a.pcap
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_r1a.pcap rx_r1a.pcap
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_tx_r1c.pcap tx_r1c.pcap
-	mv DSRC_Mosaic_Test_${i}_Trial_${j}_rx_r1c.pcap rx_r1c.pcap
+	mv DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_r1a.pcap tx_r1a.pcap
+	mv DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_r1a.pcap rx_r1a.pcap
+	mv DSRC_Mosaic_Test_${test}_Trial_${trial}_tx_r1c.pcap tx_r1c.pcap
+	mv DSRC_Mosaic_Test_${test}_Trial_${trial}_rx_r1c.pcap rx_r1c.pcap
 }
 
 processing(){

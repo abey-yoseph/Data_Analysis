@@ -15,8 +15,8 @@ bsm_rxFile = sys.argv[2] #BSM RX OBU file (shuttle)
 spat_rxFile = sys.argv[3] #SPAT RX OBU file
 map_rxFile = sys.argv[4] #MAP RX OBU file
 
-testNum = bsm_txFile.split("_")[6]
-trialNum = bsm_txFile.split("_")[8]
+testNum = bsm_txFile.split("_")[7]
+trialNum = bsm_txFile.split("_")[9]
 previousDistance = 0
 
 #calculate the time left before crossing the intersection
